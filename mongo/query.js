@@ -1,0 +1,140 @@
+require("dotenv").config();
+const { MongoClient } = require("mongodb");
+
+class MongoUtil {
+  constructor() {
+    const dbName = process.env.MONGO_DATABASE;
+    const user = encodeURIComponent(process.env.MONGO_USER_NAME);
+    const password = encodeURIComponent(process.env.MONGO_USER_PASSWORD);
+    const host = process.env.MONGO_HOST;
+    const port = process.env.MONGO_PORT;
+    // Create MongoDB URL with Authentication if Credentials Exist
+    const url = "mongodb://localhost:27017/";
+
+    this.dbName = dbName;
+    this.client = new MongoClient(url);
+    this.db = null;
+  }
+
+  async insertMessage(room_uuid, sender_id, message) {
+    await this.connect();
+    const collection = this.db.collection("messages");
+    return await collection.insertOne({
+      room_uuid,
+      sender_id,
+      message,
+      timestamp: new Date(),
+    });
+  }
+
+  /**
+   * Connect to MongoDB
+   */
+  async connect() {
+    try {
+      await this.client.connect();
+      this.db = this.client.db(this.dbName);
+      console.log("✅ MongoDB Connected Successfully");
+    } catch (error) {
+      console.error("❌ MongoDB Connection Failed:", error);
+    }
+  }
+
+  /**
+   * Close the MongoDB connection
+   */
+  async close() {
+    await this.client.close();
+    console.log("🛑 MongoDB Connection Closed");
+  }
+
+  /**
+   * Insert a single document into a collection
+   */
+  async insertOne(collectionName, document) {
+    if (!this.db) await this.connect();
+    try {
+      const collection = this.db.collection(collectionName);
+      const result = await collection.insertOne(document);
+      return result;
+    } catch (error) {
+      console.error("❌ Error inserting document:", error);
+    }
+  }
+
+  /**
+   * Insert multiple documents into a collection
+   */
+  async insertMany(collectionName, documents) {
+    if (!this.db) await this.connect();
+    try {
+      const collection = this.db.collection(collectionName);
+      return await collection.insertMany(documents);
+    } catch (error) {
+      console.error("❌ Error inserting multiple documents:", error);
+    }
+  }
+
+  /**
+   * Find documents with pagination
+   */
+  async findWithPagination(
+    collectionName,
+    page,
+    pageSize,
+    query = {},
+    sort = {}
+  ) {
+    if (!this.db) await this.connect(); // Ensure db connection
+    try {
+      const collection = this.db.collection(collectionName);
+      return await collection
+        .find(query)
+        .sort(sort)
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .toArray();
+    } catch (error) {
+      console.error("❌ Error fetching paginated documents:", error);
+    }
+  }
+  async findAll(collectionName, query = {}, sort = {}) {
+    if (!this.db) await this.connect();
+    try {
+      const collection = this.db.collection(collectionName);
+      return await collection.find(query).sort(sort).toArray();
+    } catch (error) {
+      console.error("❌ Error fetching all documents:", error);
+      return [];
+    }
+  }
+  /**
+   * Update a document in a collection
+   */
+  async update(collectionName, filter, update) {
+    if (!this.db) await this.connect();
+    try {
+      const collection = this.db.collection(collectionName);
+      return await collection.updateOne(filter, { $set: update });
+    } catch (error) {
+      console.error("❌ Error updating document:", error);
+    }
+  }
+
+  /**
+   * Delete a document from a collection
+   */
+  async delete(collectionName, filter) {
+    if (!this.db) await this.connect();
+    try {
+      const collection = this.db.collection(collectionName);
+      return await collection.deleteOne(filter);
+    } catch (error) {
+      console.error("❌ Error deleting document:", error);
+    }
+  }
+}
+
+/* module.exports = new MongoUtil(); */ // Export a single instance
+
+module.exports = MongoUtil;

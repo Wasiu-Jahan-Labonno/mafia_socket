@@ -7,7 +7,7 @@ const sendMessage = asyncHandler(async (req, res) => {
 
     socket.on("usrinfo", (data) => {
       ///user information get get
-      //console.log(data)
+      console.log(data);
       sql.query(
         "SELECT * FROM sessions INNER JOIN users ON sessions.usid=users.id INNER JOIN gcarts ON sessions.usid=gcarts.id  WHERE sessions.jwttkn=" +
           mysql.escape(data),
