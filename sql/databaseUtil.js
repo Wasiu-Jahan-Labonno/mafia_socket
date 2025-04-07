@@ -195,4 +195,4 @@ class DatabaseUtil {
 }
 
 // ✅ Export Singleton Instance
-module.exports = new DatabaseUtil();
+module.exports = DatabaseUtil;
